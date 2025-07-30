@@ -604,41 +604,58 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoader(true);
         const listEl = document.getElementById('user-list');
         listEl.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">사용자 목록을 불러오는 중...</td></tr>';
-        
+    
         if (!isSuperUser && currentRole !== 'admin') {
-             listEl.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">이 메뉴에 접근할 권한이 없습니다.</td></tr>';
+            listEl.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">이 메뉴에 접근할 권한이 없습니다.</td></tr>';
             showLoader(false);
             return;
         }
-
-        const { data, error } = await supabase.rpc('list_all_users');
+    
+        // 1. auth 스키마에서 모든 사용자 정보 가져오기
+        const { data: users, error: usersError } = await supabase.rpc('list_all_users');
         
-        listEl.innerHTML = '';
-        if (error) {
+        // 2. public 스키마의 profiles 테이블에서 모든 프로필 정보 가져오기
+        const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, username');
+    
+        if (usersError || profilesError) {
+            const error = usersError || profilesError;
             listEl.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
-        } else if (data.length === 0) {
+            showLoader(false);
+            return;
+        }
+    
+        // 3. 프로필 정보를 id 기반의 Map으로 변환하여 조회 성능 향상
+        const profilesMap = new Map(profiles.map(p => [p.id, p]));
+    
+        listEl.innerHTML = '';
+        if (users.length === 0) {
             listEl.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-gray-500">사용자가 없습니다.</td></tr>`;
         } else {
-            data.forEach(user => {
+            users.forEach(user => {
                 const meta = user.user_metadata || {};
+                const profile = profilesMap.get(user.id);
+    
+                // 4. user_metadata에 username이 없으면 profiles 테이블의 username을 사용
+                const username = meta.username || profile?.username || '';
+    
                 const isApproved = meta.is_approved === true;
                 const isSuperUserAccount = user.email === 'eowert72@gmail.com';
-
+    
                 let roleDisplay = meta.role || '미지정';
                 let statusDisplay = isApproved ? '<span class="text-green-600 font-semibold">승인됨</span>' : '<span class="text-yellow-600 font-semibold">승인 대기</span>';
                 let actionButton = !isApproved ? `<button data-id="${user.id}" class="approve-btn btn btn-primary text-xs">승인</button>` : '';
-
+    
                 if (isSuperUserAccount) {
                     roleDisplay = '<span class="font-bold text-violet-600">SUPERUSER</span>';
                     statusDisplay = '<span class="text-green-600 font-semibold">자동 승인</span>';
                     actionButton = '';
                 }
-
+    
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors";
                 tr.innerHTML = `
                     <td class="p-4 text-center font-medium">${meta.name || ''}</td>
-                    <td class="p-4 text-center text-gray-600">${meta.username || ''}</td>
+                    <td class="p-4 text-center text-gray-600">${username}</td>
                     <td class="p-4 text-center text-gray-600">${user.email}</td>
                     <td class="p-4 text-center text-gray-600">${roleDisplay}</td>
                     <td class="p-4 text-center">${statusDisplay}</td>
