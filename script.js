@@ -441,16 +441,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function downloadExcel() {
         showLoader(true);
+        // 1. 현재 화면의 필터 조건 가져오기
         const startDate = document.getElementById('start-date')?.value;
         const endDate = document.getElementById('end-date')?.value;
         const searchColumn = document.getElementById('search-column')?.value;
         const searchKeyword = document.getElementById('search-keyword')?.value.trim();
-
+    
+        // 2. 필터 조건에 맞는 데이터만 DB에서 조회
         let query = supabase.from('dispatch_requests').select('*');
-
+    
         if (startDate) query = query.gte('release_date', startDate);
         if (endDate) query = query.lte('release_date', endDate);
-        
+    
         if (searchKeyword) {
             if (searchColumn === 'all') {
                 query = query.or(
@@ -461,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `driver_phone.ilike.%${searchKeyword}%`
                 );
             } else if (searchColumn === 'driver_info') {
-                 query = query.or(
+                query = query.or(
                     `driver_name.ilike.%${searchKeyword}%,` +
                     `driver_phone.ilike.%${searchKeyword}%`
                 );
@@ -469,10 +471,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 query = query.ilike(searchColumn, `%${searchKeyword}%`);
             }
         }
-
+    
         const { data, error } = await query.order('created_at', { ascending: false });
         showLoader(false);
-
+    
         if (error) {
             showMessageModal("엑셀 데이터 다운로드 실패: " + error.message, 'error');
             return;
@@ -481,38 +483,95 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessageModal("다운로드할 데이터가 없습니다.");
             return;
         }
-
+    
+        // 3. 엑셀 헤더 정의
+        const excelHeaders = [
+            '상태', '요청자', '출고일', '납품처', '상차지', '하차지', 
+            '상차지 도착 요청시간', '하차시간', '요청차종', '파렛트 수량', '박스 수량',
+            '차량번호', '실제 차종', '기사님 정보', '금액', '요청(수정)시간', '확정(수정)시간'
+        ];
+    
+        // 4. DB 데이터를 엑셀 형식(Array of Arrays)으로 변환
         const excelData = data.map(req => {
             let statusText = req.status;
             if (req.status === 'completed') statusText = '완료';
             else if (req.status === 'confirmed') statusText = req.confirmation_updated_at ? '확정 수정' : '확정';
             else if (req.status === 'requested') statusText = req.request_updated_at ? '요청 수정' : '요청';
-
-            const vehicleRequest = [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(` (${req.vehicle_type_info})`);
-            const quantityText = [
-                req.pallet_qty ? `${req.pallet_qty} PLT` : null,
-                req.box_qty ? `${req.box_qty} 박스` : null
-            ].filter(Boolean).join(' / ');
-            const driverInfo = [req.driver_name, req.driver_phone].filter(Boolean).join(' / ');
-
-            return {
-                '상태': statusText,
-                '요청자': req.requester_name,
-                '출고일': req.release_date,
-                '납품처': req.destination,
-                '하차지': req.unloading_location,
-                '하차시간': req.unloading_time,
-                '요청차종': vehicleRequest,
-                '수량': quantityText,
-                '차량번호': req.vehicle_number,
-                '실제 차종': req.actual_vehicle_type,
-                '기사님 정보': driverInfo,
-                '요청(수정)시간': req.request_updated_at ? formatTimestamp(req.request_updated_at) : formatTimestamp(req.requested_at),
-                '확정(수정)시간': req.confirmation_updated_at ? formatTimestamp(req.confirmation_updated_at) : formatTimestamp(req.confirmed_at),
-            };
+    
+            return [
+                statusText,
+                req.requester_name || '',
+                req.release_date || '',
+                req.destination || '',
+                req.loading_location || '',
+                req.unloading_location || '',
+                req.loading_time || '',
+                req.unloading_time || '',
+                [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(' ') || '',
+                req.pallet_qty ?? '',
+                req.box_qty ?? '',
+                req.vehicle_number || '',
+                req.actual_vehicle_type || '',
+                [req.driver_name, req.driver_phone].filter(Boolean).join(' / ') || '',
+                req.cost ?? '',
+                formatTimestamp(req.request_updated_at || req.requested_at),
+                formatTimestamp(req.confirmation_updated_at || req.confirmed_at),
+            ];
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const dataForSheet = [excelHeaders, ...excelData];
+    
+        // 5. 엑셀 워크북 및 워크시트 생성 (Array of Arrays 사용)
+        const worksheet = XLSX.utils.aoa_to_sheet(dataForSheet);
+    
+        // 6. 열 너비 자동 계산
+        const colWidths = excelHeaders.map((header, i) => {
+            const headerLength = header.length;
+            const dataLengths = excelData.map(row => (row[i]?.toString() || '').length);
+            const maxLength = Math.max(headerLength, ...dataLengths);
+            return { wch: maxLength + 2 }; // 약간의 여백 추가
+        });
+        worksheet['!cols'] = colWidths;
+    
+        // 7. 스타일 정의
+        const headerStyle = {
+            font: { bold: true, color: { rgb: "FFFFFFFF" } },
+            fill: { fgColor: { rgb: "FF2D3748" } }, // 어두운 회색 (Tailwind gray-800)
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "FF000000" } },
+                bottom: { style: "thin", color: { rgb: "FF000000" } },
+                left: { style: "thin", color: { rgb: "FF000000" } },
+                right: { style: "thin", color: { rgb: "FF000000" } }
+            }
+        };
+        const cellStyle = {
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "FFCBD5E0" } }, // gray-400
+                bottom: { style: "thin", color: { rgb: "FFCBD5E0" } },
+                left: { style: "thin", color: { rgb: "FFCBD5E0" } },
+                right: { style: "thin", color: { rgb: "FFCBD5E0" } }
+            }
+        };
+    
+        // 8. 스타일 적용
+        const range = XLSX.utils.decode_range(worksheet['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: R };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (!worksheet[cell_ref]) continue;
+                
+                if (R === 0) { // 헤더 행
+                    worksheet[cell_ref].s = headerStyle;
+                } else { // 데이터 행
+                    worksheet[cell_ref].s = cellStyle;
+                }
+            }
+        }
+    
+        // 9. 엑셀 파일 생성 및 다운로드
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "배차 현황");
         XLSX.writeFile(workbook, `배차현황_${getTodayString()}.xlsx`);
