@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 배차 관리 시스템</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- 엑셀 다운로드 기능을 위한 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 분리된 CSS 파일 연결 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 로딩 오버레이 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex-col items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white"></div>
+        <p class="text-white mt-4">처리 중입니다...</p>
+    </div>
+
+    <!-- 메인 앱 (로그인 후 표시) -->
+    <div id="main-app" class="hidden">
+        <header class="bg-white shadow-sm sticky top-0 z-20">
+            <div class="mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <img src="logo.png" alt="Company Logo" class="h-10">
+                    <img src="icon.png" alt="Dispatch System Icon" class="h-10 w-10">
+                    <h1 class="text-3xl font-bold text-gray-800">배차 관리 시스템</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div id="user-info" class="text-sm text-right"></div>
+                    <button id="logout-button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm transition-colors">로그아웃</button>
+                </div>
+            </div>
+            <nav id="main-nav" class="bg-[var(--secondary-color)]">
+                <div class="mx-auto flex px-6">
+                    <!-- 역할에 따라 메뉴가 동적으로 생성됩니다 -->
+                </div>
+            </nav>
+        </header>
+
+        <main id="content-area" class="mx-auto p-6">
+            <!-- 선택된 메뉴의 내용이 여기에 표시됩니다 -->
+        </main>
+    </div>
+
+    <!-- 모달 컨테이너 -->
+    <div id="modal-container">
+        <!-- 모달 컨텐츠는 JS로 동적 생성 -->
+    </div>
+
+    <!-- 분리된 JavaScript 파일 연결 -->
+    <script src="script.js"></script>
+</body>
+</html>

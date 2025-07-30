@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 통합 배차 관리 시스템</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .input-group input, .input-group select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            outline: none;
+        }
+        
+        .input-group select option {
+            background: #23a6d5;
+        }
+
+        .input-group ::placeholder {
+            color: white !important;
+            opacity: 0.8;
+        }
+
+        .input-group :-ms-input-placeholder {
+            color: white !important;
+        }
+
+        .input-group ::-ms-input-placeholder {
+            color: white !important;
+        }
+
+        .submit-btn {
+            background: #4F46E5;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .submit-btn:hover {
+            background: #4338CA;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- 로딩 오버레이 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex-col items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white"></div>
+        <p class="text-white mt-4">처리 중입니다...</p>
+    </div>
+
+    <!-- Login Section -->
+    <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md p-8 space-y-8 glass-card">
+            <div class="text-center">
+                <img src="icon.png" alt="System Icon" class="h-14 w-14 mx-auto mb-4">
+                <h2 class="text-3xl font-bold text-white">배차 관리 시스템</h2>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div class="relative input-group">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </span>
+                    <input type="text" id="login-username" required placeholder="아이디" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <div class="relative input-group">
+                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
+                    <input type="password" id="login-password" required placeholder="비밀번호" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <button type="submit" class="w-full py-3 font-bold text-white rounded-lg submit-btn">로그인</button>
+            </form>
+            <p id="login-error" class="text-red-300 text-center h-4"></p>
+            <div class="text-center">
+                <a href="#" id="show-register" class="text-sm text-gray-200 hover:text-white transition">계정이 없으신가요? 회원가입</a>
+                <span class="text-gray-300 mx-2">|</span>
+                <a href="#" id="show-reset" class="text-sm text-gray-200 hover:text-white transition">비밀번호 찾기</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Registration Section -->
+    <div id="register-section" class="min-h-screen flex items-center justify-center p-4 hidden">
+         <div class="w-full max-w-md p-8 space-y-8 glass-card">
+            <div class="text-center">
+                <img src="icon.png" alt="System Icon" class="h-14 w-14 mx-auto mb-4">
+                <h2 class="text-3xl font-bold text-white">회원가입</h2>
+            </div>
+            <form id="register-form" class="space-y-6">
+                <div class="relative input-group">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </span>
+                    <input type="text" id="register-username" required placeholder="아이디" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <div class="relative input-group">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                    </span>
+                    <input type="text" id="register-name" required placeholder="이름" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <div class="relative input-group">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    </span>
+                    <input type="email" id="register-email" required placeholder="비밀번호 찾기용 이메일" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <div class="relative input-group">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
+                    <input type="password" id="register-password" required placeholder="비밀번호" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <div class="relative input-group">
+                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </span>
+                    <select id="register-role" required class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none appearance-none">
+                        <option value="requester">배차 요청자 (물류센터 등)</option>
+                        <option value="processor">배차 진행자 (배차업체)</option>
+                    </select>
+                </div>
+                 <button type="submit" class="w-full py-3 font-bold text-white rounded-lg submit-btn">가입 요청</button>
+            </form>
+            <p id="register-message" class="text-center h-4 text-green-300"></p>
+            <div class="text-center">
+                <a href="#" id="show-login" class="text-sm text-gray-200 hover:text-white transition">이미 계정이 있으신가요? 로그인</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Request Section -->
+    <div id="reset-section" class="min-h-screen flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-8 space-y-8 glass-card">
+            <div class="text-center">
+                <img src="icon.png" alt="System Icon" class="h-14 w-14 mx-auto mb-4">
+                <h2 class="text-3xl font-bold text-white">비밀번호 찾기</h2>
+            </div>
+            <form id="reset-form" class="space-y-6">
+                <p class="text-center text-gray-200 text-sm">가입 시 사용한 복구용 이메일을 입력하시면, 비밀번호 재설정 링크를 보내드립니다.</p>
+                <div class="relative input-group">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    </span>
+                    <input type="email" id="reset-email" required placeholder="복구용 이메일" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <button type="submit" class="w-full py-3 font-bold text-white rounded-lg submit-btn">재설정 링크 받기</button>
+            </form>
+            <p id="reset-message" class="text-center h-4 text-green-300"></p>
+            <div class="text-center">
+                <a href="#" id="show-login-from-reset" class="text-sm text-gray-200 hover:text-white transition">로그인으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Update Section -->
+    <div id="update-password-section" class="min-h-screen flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md p-8 space-y-8 glass-card">
+             <div class="text-center">
+                <img src="icon.png" alt="System Icon" class="h-14 w-14 mx-auto mb-4">
+                <h2 class="text-3xl font-bold text-white">새 비밀번호 설정</h2>
+            </div>
+            <form id="update-password-form" class="space-y-6">
+                <div class="relative input-group">
+                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
+                    <input type="password" id="new-password" required placeholder="새 비밀번호" class="w-full py-3 pl-10 pr-4 text-white rounded-lg focus:outline-none placeholder-white">
+                </div>
+                <button type="submit" class="w-full py-3 font-bold text-white rounded-lg submit-btn">비밀번호 변경</button>
+            </form>
+            <p id="update-password-message" class="text-center h-4 text-green-300"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const { createClient } = window.supabase;
+            const supabaseClient = createClient(
+                'https://kljhhpciqpyqeaipqiud.supabase.co', 
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsamhocGNpcXB5cWVhaXBxaXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MDcyMzEsImV4cCI6MjA2OTI4MzIzMX0.0KxFpDqYqPBZ1af4xLx6g8haUxm6_O7X7iakOxbLBtI'
+            );
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const loginSection = document.getElementById('login-section');
+            const registerSection = document.getElementById('register-section');
+            const resetSection = document.getElementById('reset-section');
+            const updatePasswordSection = document.getElementById('update-password-section');
+
+            const loginError = document.getElementById('login-error');
+            const registerMessage = document.getElementById('register-message');
+            const resetMessage = document.getElementById('reset-message');
+            const updatePasswordMessage = document.getElementById('update-password-message');
+
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+            document.getElementById('reset-form').addEventListener('submit', handlePasswordResetRequest);
+            document.getElementById('update-password-form').addEventListener('submit', handlePasswordUpdate);
+            
+            document.getElementById('show-register').addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('register'); });
+            document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('login'); });
+            document.getElementById('show-reset').addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('reset'); });
+            document.getElementById('show-login-from-reset').addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('login'); });
+
+            // Check for password recovery event on page load
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    toggleAuthForms('update-password');
+                }
+            });
+
+            function showLoader(show) {
+                loadingOverlay.style.display = show ? 'flex' : 'none';
+            }
+
+            function toggleAuthForms(formToShow) {
+                loginSection.classList.toggle('hidden', formToShow !== 'login');
+                registerSection.classList.toggle('hidden', formToShow !== 'register');
+                resetSection.classList.toggle('hidden', formToShow !== 'reset');
+                updatePasswordSection.classList.toggle('hidden', formToShow !== 'update-password');
+            }
+
+            async function handleLogin(e) {
+                e.preventDefault();
+                showLoader(true);
+                loginError.textContent = '';
+                const username = document.getElementById('login-username').value;
+                const password = document.getElementById('login-password').value;
+
+                const { data: profile, error: profileError } = await supabaseClient
+                    .from('profiles')
+                    .select('email')
+                    .eq('username', username)
+                    .single();
+
+                if (profileError || !profile) {
+                    loginError.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+                    showLoader(false);
+                    return;
+                }
+
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: profile.email,
+                    password: password
+                });
+
+                if (error) {
+                    loginError.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+                } else if (data.session) {
+                    window.location.href = 'index.html';
+                }
+                showLoader(false);
+            }
+
+            async function handleRegister(e) {
+                e.preventDefault();
+                showLoader(true);
+                registerMessage.textContent = '';
+                const username = document.getElementById('register-username').value;
+                const name = document.getElementById('register-name').value;
+                const email = document.getElementById('register-email').value;
+                const password = document.getElementById('register-password').value;
+                const role = document.getElementById('register-role').value;
+
+                const { data: existingUser } = await supabaseClient
+                    .from('profiles')
+                    .select('username, email')
+                    .or(`username.eq.${username},email.eq.${email}`);
+
+                if (existingUser && existingUser.length > 0) {
+                    if (existingUser.some(u => u.username === username)) {
+                        registerMessage.textContent = '이미 사용 중인 아이디입니다.';
+                    } else {
+                        registerMessage.textContent = '이미 가입된 이메일입니다.';
+                    }
+                    showLoader(false);
+                    return;
+                }
+
+                const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name: name,
+                            username: username,
+                            role: role,
+                            is_approved: false
+                        }
+                    }
+                });
+
+                if (signUpError) {
+                    registerMessage.textContent = '가입 실패: ' + signUpError.message;
+                    showLoader(false);
+                    return;
+                }
+
+                if (signUpData.user) {
+                    const { error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .insert({
+                            id: signUpData.user.id,
+                            username: username,
+                            email: email
+                        });
+                    
+                    if (profileError) {
+                        registerMessage.textContent = '프로필 생성 실패: ' + profileError.message;
+                    } else {
+                        registerMessage.textContent = '가입 요청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.';
+                        e.target.reset();
+                    }
+                }
+                showLoader(false);
+            }
+
+            async function handlePasswordResetRequest(e) {
+                e.preventDefault();
+                showLoader(true);
+                resetMessage.textContent = '';
+                const email = document.getElementById('reset-email').value;
+
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.href.split('#')[0],
+                });
+
+                if (error) {
+                    resetMessage.textContent = '오류: ' + error.message;
+                } else {
+                    resetMessage.textContent = '비밀번호 재설정 링크를 이메일로 보냈습니다. 확인해주세요.';
+                }
+                showLoader(false);
+            }
+
+            async function handlePasswordUpdate(e) {
+                e.preventDefault();
+                showLoader(true);
+                updatePasswordMessage.textContent = '';
+                const password = document.getElementById('new-password').value;
+
+                const { error } = await supabaseClient.auth.updateUser({ password: password });
+
+                if (error) {
+                    updatePasswordMessage.textContent = '비밀번호 업데이트 실패: ' + error.message;
+                } else {
+                    updatePasswordMessage.textContent = '비밀번호가 성공적으로 변경되었습니다. 로그인해주세요.';
+                    setTimeout(() => {
+                        window.location.hash = '';
+                        location.reload();
+                    }, 3000);
+                }
+                showLoader(false);
+            }
+        });
+    </script>
+</body>
+</html>
