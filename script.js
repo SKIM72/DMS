@@ -585,12 +585,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <table class="min-w-full bg-white">
                         <thead>
                              <tr>
-                                <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이름</th>
-                                <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">아이디</th>
-                                <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이메일</th>
-                                <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">역할</th>
-                                <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">상태</th>
-                                <th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이름</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">아이디</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이메일</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">역할</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">상태</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
                             </tr>
                         </thead>
                         <tbody id="user-list" class="divide-y divide-gray-200"></tbody>
@@ -637,12 +637,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors";
                 tr.innerHTML = `
-                    <td class="p-4 font-medium">${meta.name || ''}</td>
-                    <td class="p-4 text-gray-600">${meta.username || ''}</td>
-                    <td class="p-4 text-gray-600">${user.email}</td>
-                    <td class="p-4 text-gray-600">${roleDisplay}</td>
-                    <td class="p-4">${statusDisplay}</td>
-                    <td class="p-4">${actionButton}</td>`;
+                    <td class="p-4 text-center font-medium">${meta.name || ''}</td>
+                    <td class="p-4 text-center text-gray-600">${meta.username || ''}</td>
+                    <td class="p-4 text-center text-gray-600">${user.email}</td>
+                    <td class="p-4 text-center text-gray-600">${roleDisplay}</td>
+                    <td class="p-4 text-center">${statusDisplay}</td>
+                    <td class="p-4 text-center">${actionButton}</td>`;
                 listEl.appendChild(tr);
             });
         }
