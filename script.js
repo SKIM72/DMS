@@ -882,7 +882,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 
                                 <div class="md:col-span-2">
                                     <label class="label">상차지</label>
-                                    <input type="text" name="loading_location" class="input-field" placeholder="예: 경기도 이천시 ..." value="${request?.loading_location || ''}" ${requesterFieldsDisabled}>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" name="loading_location" id="loading_location_input" class="input-field" placeholder="예: 경기도 이천시 ..." value="${request?.loading_location || ''}" ${requesterFieldsDisabled}>
+                                        <button type="button" id="set-center-address-btn" class="btn btn-secondary text-xs whitespace-nowrap" ${requesterFieldsDisabled}>센터주소</button>
+                                    </div>
                                 </div>
 
                                 <div class="md:col-span-2">
@@ -947,6 +950,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.getElementById('load-favorite-btn').onclick = openFavoritesLoader;
         
+        document.getElementById('set-center-address-btn').onclick = () => {
+            document.getElementById('loading_location_input').value = '경기 이천시 장호원읍 경충대로597번길 66 브로스랜드';
+        };
+
         document.getElementById('set-loading-tbd-btn').onclick = () => {
             document.getElementById('loading_time_input').value = '시간 협의';
         };
