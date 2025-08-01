@@ -877,8 +877,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoader(true);
         const [destinationsRes, loadingPointsRes, unloadingPointsRes, vehicleTypesRes] = await Promise.all([
             supabase.from('destinations').select('name'),
-            supabase.from('loading_points').select('name, address'),
-            supabase.from('unloading_points').select('name, address'),
+            supabase.from('loading_points').select('name, address, manager_name, manager_phone'),
+            supabase.from('unloading_points').select('name, address, manager_name, manager_phone'),
             supabase.from('vehicle_types').select('name')
         ]);
         showLoader(false);
@@ -934,6 +934,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         </button>
                                     </div>
                                 </div>
+                                
+                                <div><label class="label">상차지 담당자</label><input type="text" name="loading_manager_name" class="input-field" placeholder="담당자 이름" value="${request?.loading_manager_name || ''}" ${requesterFieldsDisabled}></div>
+                                <div><label class="label">상차지 연락처</label><input type="text" name="loading_manager_phone" class="input-field" placeholder="담당자 연락처" value="${request?.loading_manager_phone || ''}" ${requesterFieldsDisabled}></div>
 
                                 <div class="md:col-span-2">
                                     <label class="label">하차지</label>
@@ -944,6 +947,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                         </button>
                                     </div>
                                 </div>
+
+                                <div><label class="label">하차지 담당자</label><input type="text" name="unloading_manager_name" class="input-field" placeholder="담당자 이름" value="${request?.unloading_manager_name || ''}" ${requesterFieldsDisabled}></div>
+                                <div><label class="label">하차지 연락처</label><input type="text" name="unloading_manager_phone" class="input-field" placeholder="담당자 연락처" value="${request?.unloading_manager_phone || ''}" ${requesterFieldsDisabled}></div>
+
 
                                 <div class="md:col-span-2">
                                     <label class="label">상차지 도착 요청 시간</label>
@@ -1137,12 +1144,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${config.hasAddress ? `<td class="p-2 text-left text-sm">${point.address || ''}</td>` : ''}
                 `;
                 tr.addEventListener('dblclick', () => {
-                    const targetInputId = type === 'destination' ? 'destination_input' : `${type}_location_input`;
-                    const targetInput = document.getElementById(targetInputId);
-                    if (config.hasAddress) {
-                       targetInput.value = point.address;
-                    } else {
-                       targetInput.value = point.name;
+                    if (type === 'destination') {
+                        document.getElementById('destination_input').value = point.name;
+                    } else if (type === 'loading') {
+                        document.getElementById('loading_location_input').value = point.address;
+                        document.querySelector('input[name="loading_manager_name"]').value = point.manager_name || '';
+                        document.querySelector('input[name="loading_manager_phone"]').value = point.manager_phone || '';
+                    } else if (type === 'unloading') {
+                        document.getElementById('unloading_location_input').value = point.address;
+                        document.querySelector('input[name="unloading_manager_name"]').value = point.manager_name || '';
+                        document.querySelector('input[name="unloading_manager_phone"]').value = point.manager_phone || '';
                     }
                     document.getElementById('point-search-modal').remove();
                 });
@@ -1278,7 +1289,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <thead>
                              <tr>
                                 <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">${nameHeader}</th>
-                                ${hasAddress ? '<th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">주소</th>' : ''}
+                                ${hasAddress ? `
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">주소</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">담당자 이름</th>
+                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">담당자 연락처</th>
+                                ` : ''}
                                 <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
                             </tr>
                         </thead>
@@ -1298,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoader(true);
         const listEl = document.getElementById('master-list');
         const hasAddress = ['loading_points', 'unloading_points'].includes(tableName);
-        const colspan = hasAddress ? 3 : 2;
+        const colspan = hasAddress ? 5 : 2;
         listEl.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>`;
         
         const { data, error } = await supabase.from(tableName).select('*').order('name', { ascending: true });
@@ -1314,7 +1329,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.className = "hover:bg-gray-50 transition-colors";
                 tr.innerHTML = `
                     <td class="p-4 text-center font-medium">${item.name}</td>
-                    ${hasAddress ? `<td class="p-4 text-center text-gray-600">${item.address || ''}</td>` : ''}
+                    ${hasAddress ? `
+                    <td class="p-4 text-center text-gray-600">${item.address || ''}</td>
+                    <td class="p-4 text-center text-gray-600">${item.manager_name || ''}</td>
+                    <td class="p-4 text-center text-gray-600">${item.manager_phone || ''}</td>
+                    ` : ''}
                     <td class="p-4 text-center">
                         <button data-id="${item.id}" data-table="${tableName}" data-title="${title}" class="delete-master-btn btn btn-accent text-xs">삭제</button>
                     </td>`;
@@ -1349,7 +1368,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div>
                         <label class="block text-sm font-medium text-gray-700">주소</label>
                         <input type="text" name="address" class="input-field mt-1" required>
-                    </div>` : ''}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">담당자 이름</label>
+                        <input type="text" name="manager_name" class="input-field mt-1">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">담당자 연락처</label>
+                        <input type="text" name="manager_phone" class="input-field mt-1">
+                    </div>
+                    ` : ''}
                     <div class="flex justify-end items-center pt-4 mt-4 border-t gap-3">
                         <button type="button" id="cancel-master-btn" class="btn btn-secondary">취소</button>
                         <button type="submit" class="btn btn-primary">저장</button>
@@ -1372,6 +1400,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formData = new FormData(e.target);
         const dataToInsert = Object.fromEntries(formData.entries());
+        
+        for (const key in dataToInsert) {
+            if (dataToInsert[key] === '') dataToInsert[key] = null;
+        }
 
         const { error } = await supabase.from(tableName).insert([dataToInsert]);
         showLoader(false);
@@ -1394,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'vehicle_types': '차종'
         }[tableName];
 
-        const headers = hasAddress ? [[nameHeader, '주소']] : [[nameHeader]];
+        const headers = hasAddress ? [[nameHeader, '주소', '담당자 이름', '담당자 연락처']] : [[nameHeader]];
         const fileName = `${title}_업로드_양식.xlsx`;
 
         const worksheet = XLSX.utils.aoa_to_sheet(headers);
@@ -1424,17 +1456,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     'unloading_points': '이름',
                     'vehicle_types': '차종'
                 }[tableName];
-                const requiredHeaders = hasAddress ? [nameHeader, '주소'] : [nameHeader];
+                
+                const requiredHeaders = hasAddress ? [nameHeader, '주소', '담당자 이름', '담당자 연락처'] : [nameHeader];
                 const headers = json[0];
 
-                if (!requiredHeaders.every(h => headers.includes(h))) {
-                    throw new Error(`엑셀 파일의 첫 행에 '${requiredHeaders.join(', ')}' 헤더가 필요합니다.`);
+                if (![nameHeader, ...(hasAddress ? ['주소'] : [])].every(h => headers.includes(h))) {
+                     throw new Error(`엑셀 파일의 첫 행에 필수 헤더(${nameHeader}${hasAddress ? ', 주소' : ''})가 필요합니다.`);
                 }
+                
+                const nameIndex = headers.indexOf(nameHeader);
+                const addressIndex = hasAddress ? headers.indexOf('주소') : -1;
+                const managerNameIndex = hasAddress ? headers.indexOf('담당자 이름') : -1;
+                const managerPhoneIndex = hasAddress ? headers.indexOf('담당자 연락처') : -1;
 
                 const dataToInsert = json.slice(1).map(row => {
-                    const item = { name: row[headers.indexOf(nameHeader)] };
+                    const item = { name: row[nameIndex] };
                     if (hasAddress) {
-                        item.address = row[headers.indexOf('주소')];
+                        item.address = row[addressIndex];
+                        item.manager_name = managerNameIndex > -1 ? row[managerNameIndex] : null;
+                        item.manager_phone = managerPhoneIndex > -1 ? row[managerPhoneIndex] : null;
                     }
                     return item;
                 }).filter(item => item.name);
@@ -1443,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error("업로드할 데이터가 없습니다.");
                 }
 
-                const { error } = await supabase.from(tableName).insert(dataToInsert);
+                const { error } = await supabase.from(tableName).insert(dataToInsert, { upsert: true, onConflict: 'name' });
                 if (error) throw error;
 
                 showMessageModal('엑셀 데이터가 성공적으로 업로드되었습니다.', 'success');
