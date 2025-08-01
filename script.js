@@ -337,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">납품처</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">상차지</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">상차지 담당자</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">상차시간</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차지</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차지 담당자</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차시간</th>
@@ -381,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchAndRenderDispatches() {
         showLoader(true);
         const listEl = document.getElementById('dispatch-list');
-        listEl.innerHTML = '<tr><td colspan="15" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
+        listEl.innerHTML = '<tr><td colspan="16" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
 
         const startDate = document.getElementById('start-date')?.value;
         const endDate = document.getElementById('end-date')?.value;
@@ -416,9 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         listEl.innerHTML = '';
         if (error) {
-            listEl.innerHTML = `<tr><td colspan="15" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
+            listEl.innerHTML = `<tr><td colspan="16" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
         } else if (data.length === 0) {
-            listEl.innerHTML = `<tr><td colspan="15" class="text-center p-6 text-gray-500">조회된 데이터가 없습니다.</td></tr>`;
+            listEl.innerHTML = `<tr><td colspan="16" class="text-center p-6 text-gray-500">조회된 데이터가 없습니다.</td></tr>`;
         } else {
             data.forEach((req, index) => {
                 const tr = document.createElement('tr');
@@ -443,6 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.destination || ''}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.loading_location || ''}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${loadingManagerInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.loading_time || '-'}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.unloading_location || ''}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${unloadingManagerInfo || '-'}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.unloading_time || ''}</td>
@@ -452,8 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.vehicle_number || '-'}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${driverInfo || '-'}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap">
-                        <button data-id="${req.id}" class="edit-dispatch-btn btn btn-secondary text-xs">수정/확인</button>
-                        ${canDelete ? `<button data-id="${req.id}" class="delete-dispatch-btn btn btn-accent text-xs mt-1">삭제</button>` : ''}
+                        <button data-id="${req.id}" class="edit-dispatch-btn btn btn-sm btn-secondary">수정/확인</button>
+                        ${canDelete ? `<button data-id="${req.id}" class="delete-dispatch-btn btn btn-sm btn-accent mt-1">삭제</button>` : ''}
                     </td>`;
                 listEl.appendChild(tr);
             });
