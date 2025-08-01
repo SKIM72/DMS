@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('nav-dispatch-status')?.classList.contains('active')) {
                 fetchAndRenderDispatches();
             }
-        }, 60000); // 1분 = 60,000 밀리초
+        }, 180000); // 3분 = 180,000 밀리초
 
         dispatchChannel = supabase.channel('dispatch_requests_changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_requests' }, payload => {
@@ -328,22 +328,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="overflow-auto flex-grow">
-                    <table class="min-w-full bg-white">
+                    <table class="min-w-full bg-white table-compact">
                         <thead class="bg-slate-800 sticky top-0 z-10">
                             <tr>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">상태</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">요청자</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">출고일</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">납품처</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">하차지</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">하차시간</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">요청차종</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">수량</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">차량번호</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">기사님 정보</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">요청(수정)시간</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">확정(수정)시간</th>
-                                <th class="p-4 text-center text-xs font-semibold text-white tracking-wider">관리</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">상태</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">요청자</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">출고일</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">납품처</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">상차지</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">상차지 담당자</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차지</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차지 담당자</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차시간</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">요청차종</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">실제차종</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">수량</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">차량번호</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">기사님 정보</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">관리</th>
                             </tr>
                         </thead>
                         <tbody id="dispatch-list" class="divide-y divide-slate-200"></tbody>
@@ -379,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchAndRenderDispatches() {
         showLoader(true);
         const listEl = document.getElementById('dispatch-list');
-        listEl.innerHTML = '<tr><td colspan="13" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
+        listEl.innerHTML = '<tr><td colspan="15" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
 
         const startDate = document.getElementById('start-date')?.value;
         const endDate = document.getElementById('end-date')?.value;
@@ -414,9 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         listEl.innerHTML = '';
         if (error) {
-            listEl.innerHTML = `<tr><td colspan="13" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
+            listEl.innerHTML = `<tr><td colspan="15" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
         } else if (data.length === 0) {
-            listEl.innerHTML = `<tr><td colspan="13" class="text-center p-6 text-gray-500">조회된 데이터가 없습니다.</td></tr>`;
+            listEl.innerHTML = `<tr><td colspan="15" class="text-center p-6 text-gray-500">조회된 데이터가 없습니다.</td></tr>`;
         } else {
             data.forEach((req, index) => {
                 const tr = document.createElement('tr');
@@ -424,29 +426,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.style.animationDelay = `${index * 50}ms`;
 
                 const vehicleRequest = [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(' ');
+                const actualVehicleInfo = [req.actual_vehicle_type, req.vehicle_info].filter(Boolean).join(' / ');
                 const quantityParts = [];
                 if (req.pallet_qty != null) quantityParts.push(`${req.pallet_qty} PLT`);
                 if (req.box_qty != null) quantityParts.push(`${req.box_qty} 박스`);
                 const quantityText = quantityParts.join(' / ');
                 const driverInfo = [req.driver_name, req.driver_phone].filter(Boolean).join(' / ');
-                const requestTime = req.request_updated_at ? formatTimestamp(req.request_updated_at) : formatTimestamp(req.requested_at);
-                const confirmationTime = req.confirmation_updated_at ? formatTimestamp(req.confirmation_updated_at) : formatTimestamp(req.confirmed_at);
+                const loadingManagerInfo = [req.loading_manager_name, req.loading_manager_phone].filter(Boolean).join(' / ');
+                const unloadingManagerInfo = [req.unloading_manager_name, req.unloading_manager_phone].filter(Boolean).join(' / ');
                 const canDelete = isSuperUser || (currentRole === 'requester' && req.requester_id === currentUser.id);
 
                 tr.innerHTML = `
-                    <td class="p-4 text-center whitespace-nowrap">${getStatusBadge(req)}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${req.requester_name || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap font-medium text-gray-800">${req.release_date || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${req.destination || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${req.unloading_location || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${req.unloading_time || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${vehicleRequest || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${quantityText || ''}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${req.vehicle_number || '-'}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-600">${driverInfo || '-'}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-500 text-sm">${requestTime}</td>
-                    <td class="p-4 text-center whitespace-nowrap text-gray-500 text-sm">${confirmationTime}</td>
-                    <td class="p-4 text-center whitespace-nowrap">
+                    <td class="p-2 text-xs text-center whitespace-nowrap">${getStatusBadge(req)}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.requester_name || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap font-medium text-gray-800">${req.release_date || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.destination || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.loading_location || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${loadingManagerInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.unloading_location || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${unloadingManagerInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.unloading_time || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${vehicleRequest || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${actualVehicleInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${quantityText || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.vehicle_number || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${driverInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap">
                         <button data-id="${req.id}" class="edit-dispatch-btn btn btn-secondary text-xs">수정/확인</button>
                         ${canDelete ? `<button data-id="${req.id}" class="delete-dispatch-btn btn btn-accent text-xs mt-1">삭제</button>` : ''}
                     </td>`;
@@ -500,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     
         const excelHeaders = [
-            '상태', '요청자', '출고일', '납품처', '상차지', '하차지', 
+            '상태', '요청자', '출고일', '납품처', '상차지', '상차지 담당자 정보', '하차지', '하차지 담당자 정보',
             '상차지 도착 요청시간', '하차시간', '요청차종', '파렛트 수량', '박스 수량',
             '차량번호', '실제 차종', '기사님 정보', '금액', '요청(수정)시간', '확정(수정)시간'
         ];
@@ -511,13 +516,18 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (req.status === 'confirmed') statusText = req.confirmation_updated_at ? '확정 수정' : '확정';
             else if (req.status === 'requested') statusText = req.request_updated_at ? '요청 수정' : '요청';
     
+            const loadingManagerInfo = [req.loading_manager_name, req.loading_manager_phone].filter(Boolean).join(' / ');
+            const unloadingManagerInfo = [req.unloading_manager_name, req.unloading_manager_phone].filter(Boolean).join(' / ');
+
             return [
                 statusText,
                 req.requester_name || '',
                 req.release_date || '',
                 req.destination || '',
                 req.loading_location || '',
+                loadingManagerInfo,
                 req.unloading_location || '',
+                unloadingManagerInfo,
                 req.loading_time || '',
                 req.unloading_time || '',
                 [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(' ') || '',
@@ -897,6 +907,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const vehicleTypeOptions = vehicleTypes.map(vt => `<option value="${vt.name}" ${request?.vehicle_type === vt.name ? 'selected' : ''}>${vt.name}</option>`).join('');
         const actualVehicleTypeOptions = vehicleTypes.map(vt => `<option value="${vt.name}" ${request?.actual_vehicle_type === vt.name ? 'selected' : ''}>${vt.name}</option>`).join('');
 
+        const requestTime = request ? (request.request_updated_at ? formatTimestamp(request.request_updated_at) : formatTimestamp(request.requested_at)) : '';
+        const confirmationTime = request ? (request.confirmation_updated_at ? formatTimestamp(request.confirmation_updated_at) : formatTimestamp(request.confirmed_at)) : '';
+
         modalContainer.innerHTML = `
         <div id="dispatch-modal-inner" class="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-30">
             <div class="modal-container bg-white w-full max-w-5xl rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
@@ -937,6 +950,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 
                                 <div><label class="label">상차지 담당자</label><input type="text" name="loading_manager_name" class="input-field" placeholder="담당자 이름" value="${request?.loading_manager_name || ''}" ${requesterFieldsDisabled}></div>
                                 <div><label class="label">상차지 연락처</label><input type="text" name="loading_manager_phone" class="input-field" placeholder="담당자 연락처" value="${request?.loading_manager_phone || ''}" ${requesterFieldsDisabled}></div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="label">상차지 도착 요청 시간</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" name="loading_time" id="loading_time_input" class="input-field" placeholder="예: 10:00 또는 시간 협의" value="${request?.loading_time || ''}" ${requesterFieldsDisabled}>
+                                        <button type="button" id="set-loading-tbd-btn" class="btn btn-secondary text-xs whitespace-nowrap" ${requesterFieldsDisabled}>시간 협의</button>
+                                    </div>
+                                </div>
 
                                 <div class="md:col-span-2">
                                     <label class="label">하차지</label>
@@ -950,15 +971,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 <div><label class="label">하차지 담당자</label><input type="text" name="unloading_manager_name" class="input-field" placeholder="담당자 이름" value="${request?.unloading_manager_name || ''}" ${requesterFieldsDisabled}></div>
                                 <div><label class="label">하차지 연락처</label><input type="text" name="unloading_manager_phone" class="input-field" placeholder="담당자 연락처" value="${request?.unloading_manager_phone || ''}" ${requesterFieldsDisabled}></div>
-
-
-                                <div class="md:col-span-2">
-                                    <label class="label">상차지 도착 요청 시간</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="text" name="loading_time" id="loading_time_input" class="input-field" placeholder="예: 10:00 또는 시간 협의" value="${request?.loading_time || ''}" ${requesterFieldsDisabled}>
-                                        <button type="button" id="set-loading-tbd-btn" class="btn btn-secondary text-xs whitespace-nowrap" ${requesterFieldsDisabled}>시간 협의</button>
-                                    </div>
-                                </div>
                                 
                                 <div class="md:col-span-2">
                                     <label class="label">하차지 도착 요청 시간</label>
@@ -967,6 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <button type="button" id="set-unloading-now-btn" class="btn btn-secondary text-xs whitespace-nowrap" ${requesterFieldsDisabled}>도착 즉시</button>
                                     </div>
                                 </div>
+                                
                                 <div>
                                     <label class="label">요청 차종</label>
                                     <select name="vehicle_type" class="input-field" ${requesterFieldsDisabled}>
@@ -1003,7 +1016,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end items-center pt-8 mt-8 border-t gap-3">
+                    
+                    ${request ? `
+                    <div class="mt-6 pt-4 border-t text-sm text-gray-500 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><strong>요청(수정)시간:</strong> <span class="font-mono">${requestTime || 'N/A'}</span></div>
+                        <div><strong>확정(수정)시간:</strong> <span class="font-mono">${confirmationTime || 'N/A'}</span></div>
+                    </div>
+                    ` : ''}
+
+                    <div class="flex justify-end items-center pt-8 mt-4 border-t gap-3">
                         <button type="button" id="cancel-dispatch-btn" class="btn btn-secondary">취소</button>
                         <button type="submit" class="btn btn-primary">저장</button>
                     </div>
@@ -1019,19 +1040,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cancel-dispatch-btn').onclick = closeDispatchModal;
         document.getElementById('dispatch-form').onsubmit = handleDispatchFormSubmit;
         
-        // 즐겨찾기 불러오기 버튼 이벤트
         document.getElementById('load-favorite-btn').onclick = openFavoritesLoader;
-
         document.getElementById('destination-search-btn').onclick = () => openPointSearchModal('destination', destinations);
         document.getElementById('loading-search-btn').onclick = () => openPointSearchModal('loading', loadingPoints);
         document.getElementById('unloading-search-btn').onclick = () => openPointSearchModal('unloading', unloadingPoints);
-
         document.getElementById('cost_input').addEventListener('input', (e) => formatCurrency(e.target));
-
         document.getElementById('set-loading-tbd-btn').onclick = () => {
             document.getElementById('loading_time_input').value = '시간 협의';
         };
-
         document.getElementById('set-unloading-now-btn').onclick = () => {
             document.getElementById('unloading_time_input').value = '도착 즉시';
         };
@@ -1141,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.className = 'hover:bg-gray-100 cursor-pointer';
                 tr.innerHTML = `
                     <td class="p-2 text-center text-sm">${point.name}</td>
-                    ${config.hasAddress ? `<td class="p-2 text-left text-sm">${point.address || ''}</td>` : ''}
+                    ${config.hasAddress ? `<td class="p-2 text-center text-sm">${point.address || ''}</td>` : ''}
                 `;
                 tr.addEventListener('dblclick', () => {
                     if (type === 'destination') {

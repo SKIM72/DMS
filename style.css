@@ -14,7 +14,23 @@ body {
     font-family: 'Noto Sans KR', sans-serif; 
     background-color: var(--bg-color);
     color: var(--text-main);
+    user-select: none; /* 텍스트 드래그(선택) 방지 */
+    -webkit-user-select: none;
+    -ms-user-select: none;
 }
+
+/* 입력 필드 및 테이블 데이터는 드래그(선택) 가능하도록 설정 */
+input, textarea, select, td, th {
+    user-select: auto;
+    -webkit-user-select: auto;
+    -ms-user-select: auto;
+}
+td, th {
+    user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
+}
+
 
 nav#main-nav {
     background: rgba(17, 24, 39, 0.8); /* Gray 900 with transparency */
@@ -129,4 +145,14 @@ nav button.active {
 }
 .fade-in-row {
   animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Compact table style */
+.table-compact th {
+    padding: 0.5rem;
+    font-size: 0.75rem; /* text-xs */
+}
+.table-compact td {
+    padding: 0.5rem;
+    font-size: 0.75rem; /* text-xs */
 }
