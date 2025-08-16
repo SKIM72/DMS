@@ -37,14 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentUser = session.user;
         currentRole = currentUser.user_metadata.role || 'requester';
-        isSuperUser = currentUser.email === 'eowert72@gmail.com'; 
+        isSuperUser = currentUser.email === 'eowert72@gmail.com';
 
         // ★★★ 수정된 부분 1 ★★★
         // 승인되지 않은 사용자의 경우, 모달의 '확인' 버튼을 눌러야 로그아웃 되도록 수정
         if (!currentUser.user_metadata.is_approved && !isSuperUser) {
             showMessageModal(
-                '계정이 아직 승인되지 않았습니다. 관리자에게 문의하세요.', 
-                'error', 
+                '계정이 아직 승인되지 않았습니다. 관리자에게 문의하세요.',
+                'error',
                 handleLogout // handleLogout 함수를 콜백으로 전달
             );
             showLoader(false); // 로더를 숨겨서 모달이 잘 보이게 합니다.
@@ -77,9 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
         userInfo.innerHTML = `
             <div class="font-semibold text-gray-800">${displayName}</div>
             <div class="text-gray-500 text-xs">${isSuperUser ? '슈퍼유저' : roleKorean[currentRole]}</div>`;
-        
+
         mainNav.innerHTML = '';
-        
+
         const allMenus = {
             'dispatch-status': { title: '배차 현황', render: renderDispatchStatus },
             'favorite-destinations': { title: '납품처 즐겨찾기 관리', render: renderFavoriteDestinations },
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const menuOrder = ['dispatch-status', 'favorite-destinations', 'destination-master', 'loading-point-master', 'unloading-point-master', 'vehicle-type-master', 'account-management'];
-        
+
         menuOrder.forEach(id => {
             const menu = allMenus[id];
             const isAdminOrSuperUser = isSuperUser || currentRole === 'admin';
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', keydownHandler);
         confirmYesBtn.focus();
     }
-    
+
     function getStatusBadge(req) {
         const baseStyle = "text-xs font-semibold me-2 px-3 py-1 rounded-full";
         if (req.status === 'completed') {
@@ -215,14 +215,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<span class="${baseStyle} bg-indigo-100 text-indigo-800">확정</span>`;
         }
         if (req.status === 'requested') {
-             if (req.request_updated_at) {
+            if (req.request_updated_at) {
                 return `<span class="${baseStyle} bg-orange-100 text-orange-800">요청 수정</span>`;
             }
             return `<span class="${baseStyle} bg-yellow-100 text-yellow-800">요청</span>`;
         }
         return `<span class="${baseStyle} bg-gray-100 text-gray-800">${req.status || 'N/A'}</span>`;
     }
-    
+
     function getTodayString() {
         const today = new Date();
         const year = today.getFullYear();
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
             new Notification(title, options);
         }
     }
-    
+
     function handleNotification(payload) {
         const { eventType, new: newRecord, old: oldRecord } = payload;
 
@@ -281,8 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isJustConfirmed = oldRecord.status !== 'confirmed' && newRecord.status === 'confirmed';
             if (isJustConfirmed && newRecord.requester_id === currentUser.id) {
                 const body = `차량번호: ${newRecord.vehicle_number || '미지정'}\n` +
-                             `기사님: ${newRecord.driver_name || '미지정'} / ${newRecord.driver_phone || '미지정'}\n` +
-                             `실제차종: ${newRecord.actual_vehicle_type || '미지정'}`;
+                    `기사님: ${newRecord.driver_name || '미지정'} / ${newRecord.driver_phone || '미지정'}\n` +
+                    `실제차종: ${newRecord.actual_vehicle_type || '미지정'}`;
                 showNotification('✅ 배차가 확정되었습니다!', { body: body });
             }
         }
@@ -294,9 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const quantityText = quantityParts.join(' / ');
 
             const body = `납품처: ${newRecord.destination}\n` +
-                         `하차지: ${newRecord.unloading_location}\n` +
-                         `요청차종: ${newRecord.vehicle_type || ''} ${newRecord.vehicle_type_info || ''}\n` +
-                         `수량: ${quantityText}`;
+                `하차지: ${newRecord.unloading_location}\n` +
+                `요청차종: ${newRecord.vehicle_type || ''} ${newRecord.vehicle_type_info || ''}\n` +
+                `수량: ${quantityText}`;
             showNotification('🔔 신규 배차 요청이 있습니다!', { body: body });
         }
     }
@@ -304,13 +304,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 배차 현황 메뉴 ---
     async function renderDispatchStatus() {
+        // ★★★ 수정된 부분 ★★★
+        // 'processor' 역할이 아닐 경우에만 "신규 배차 요청" 버튼을 표시
+        let addDispatchButtonHtml = '';
+        if (currentRole !== 'processor') {
+            addDispatchButtonHtml = `<button id="add-dispatch-btn" class="btn btn-primary text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>신규 배차 요청</button>`;
+        }
+
         contentArea.innerHTML = `
             <div class="content-card flex flex-col mt-4" style="max-height: 80vh;">
                 <div class="flex-shrink-0">
                     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                         <div class="flex items-center gap-4">
                             <h2 class="text-2xl font-bold text-gray-800">배차 현황</h2>
-                            <button id="add-dispatch-btn" class="btn btn-primary text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>신규 배차 요청</button>
+                            ${addDispatchButtonHtml}
                         </div>
                         <div class="flex items-center flex-wrap gap-4 bg-gray-50 p-2 rounded-lg border">
                             <div class="flex items-center gap-2">
@@ -366,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </table>
                 </div>
             </div>`;
-        
+
         document.getElementById('search-btn').onclick = fetchAndRenderDispatches;
         document.getElementById('excel-btn').onclick = downloadExcel;
         document.getElementById('refresh-btn').onclick = fetchAndRenderDispatches;
@@ -382,7 +389,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('search-keyword').value = '';
             fetchAndRenderDispatches();
         };
-        document.getElementById('add-dispatch-btn').onclick = () => openDispatchModal();
+
+        // ★★★ 수정된 부분 ★★★
+        // 버튼이 존재할 경우에만 이벤트 리스너를 할당
+        const addDispatchBtn = document.getElementById('add-dispatch-btn');
+        if (addDispatchBtn) {
+            addDispatchBtn.onclick = () => openDispatchModal();
+        }
+
         document.getElementById('search-keyword').addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
                 fetchAndRenderDispatches();
@@ -406,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (startDate) query = query.gte('release_date', startDate);
         if (endDate) query = query.lte('release_date', endDate);
-        
+
         if (searchKeyword) {
             if (searchColumn === 'all') {
                 query = query.or(
@@ -417,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `driver_phone.ilike.%${searchKeyword}%`
                 );
             } else if (searchColumn === 'driver_info') {
-                 query = query.or(
+                query = query.or(
                     `driver_name.ilike.%${searchKeyword}%,` +
                     `driver_phone.ilike.%${searchKeyword}%`
                 );
@@ -425,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 query = query.ilike(searchColumn, `%${searchKeyword}%`);
             }
         }
-        
+
         const { data, error } = await query.order('created_at', { ascending: false });
 
         listEl.innerHTML = '';
@@ -482,12 +496,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const endDate = document.getElementById('end-date')?.value;
         const searchColumn = document.getElementById('search-column')?.value;
         const searchKeyword = document.getElementById('search-keyword')?.value.trim();
-    
+
         let query = supabase.from('dispatch_requests').select('*');
-    
+
         if (startDate) query = query.gte('release_date', startDate);
         if (endDate) query = query.lte('release_date', endDate);
-    
+
         if (searchKeyword) {
             if (searchColumn === 'all') {
                 query = query.or(
@@ -506,10 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 query = query.ilike(searchColumn, `%${searchKeyword}%`);
             }
         }
-    
+
         const { data, error } = await query.order('created_at', { ascending: false });
         showLoader(false);
-    
+
         if (error) {
             showMessageModal("엑셀 데이터 다운로드 실패: " + error.message, 'error');
             return;
@@ -518,19 +532,19 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessageModal("다운로드할 데이터가 없습니다.");
             return;
         }
-    
+
         const excelHeaders = [
             '상태', '요청자', '출고일', '납품처', '상차지', '상차지 담당자 정보', '하차지', '하차지 담당자 정보',
             '상차지 도착 요청시간', '하차시간', '요청차종', '파렛트 수량', '박스 수량',
             '차량번호', '실제 차종', '기사님 정보', '금액', '요청(수정)시간', '확정(수정)시간'
         ];
-    
+
         const excelData = data.map(req => {
             let statusText = req.status;
             if (req.status === 'completed') statusText = '완료';
             else if (req.status === 'confirmed') statusText = req.confirmation_updated_at ? '확정 수정' : '확정';
             else if (req.status === 'requested') statusText = req.request_updated_at ? '요청 수정' : '요청';
-    
+
             const loadingManagerInfo = [req.loading_manager_name, req.loading_manager_phone].filter(Boolean).join(' / ');
             const unloadingManagerInfo = [req.unloading_manager_name, req.unloading_manager_phone].filter(Boolean).join(' / ');
 
@@ -558,9 +572,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const dataForSheet = [excelHeaders, ...excelData];
-    
+
         const worksheet = XLSX.utils.aoa_to_sheet(dataForSheet);
-    
+
         const colWidths = excelHeaders.map((header, i) => {
             const headerLength = header.length;
             const dataLengths = excelData.map(row => (row[i]?.toString() || '').length);
@@ -568,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return { wch: maxLength + 2 };
         });
         worksheet['!cols'] = colWidths;
-    
+
         const headerStyle = {
             font: { bold: true, color: { rgb: "FFFFFFFF" } },
             fill: { fgColor: { rgb: "FF2D3748" } },
@@ -589,14 +603,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 right: { style: "thin", color: { rgb: "FFCBD5E0" } }
             }
         };
-    
+
         const range = XLSX.utils.decode_range(worksheet['!ref']);
         for (let R = range.s.r; R <= range.e.r; ++R) {
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cell_address = { c: C, r: R };
                 const cell_ref = XLSX.utils.encode_cell(cell_address);
                 if (!worksheet[cell_ref]) continue;
-                
+
                 if (R === 0) {
                     worksheet[cell_ref].s = headerStyle;
                 } else {
@@ -604,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-    
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "배차 현황");
         XLSX.writeFile(workbook, `배차현황_${getTodayString()}.xlsx`);
@@ -634,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </table>
                 </div>
             </div>`;
-        
+
         document.getElementById('add-favorite-btn').onclick = openAddFavoriteModal;
         await fetchAndRenderFavorites();
     }
@@ -643,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoader(true);
         const listEl = document.getElementById('favorites-list');
         listEl.innerHTML = '<tr><td colspan="4" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
-        
+
         const { data, error } = await supabase.from('favorite_destinations').select('*').order('created_at', { ascending: false });
 
         listEl.innerHTML = '';
@@ -667,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showLoader(false);
     }
-    
+
     function openAddFavoriteModal() {
         const modalHtml = `
         <div id="favorite-modal" class="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-30">
@@ -749,14 +763,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
                         <thead>
-                             <tr>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이름</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">아이디</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이메일</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">역할</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">상태</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
-                            </tr>
+                                <tr>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이름</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">아이디</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">이메일</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">역할</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">상태</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
+                                </tr>
                         </thead>
                         <tbody id="user-list" class="divide-y divide-gray-200"></tbody>
                     </table>
@@ -769,25 +783,25 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoader(true);
         const listEl = document.getElementById('user-list');
         listEl.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">사용자 목록을 불러오는 중...</td></tr>';
-    
+
         if (!isSuperUser && currentRole !== 'admin') {
             listEl.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">이 메뉴에 접근할 권한이 없습니다.</td></tr>';
             showLoader(false);
             return;
         }
-    
+
         const { data: users, error: usersError } = await supabase.rpc('list_all_users');
         const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, username');
-    
+
         if (usersError || profilesError) {
             const error = usersError || profilesError;
             listEl.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
             showLoader(false);
             return;
         }
-    
+
         const profilesMap = new Map(profiles.map(p => [p.id, p]));
-    
+
         listEl.innerHTML = '';
         if (users.length === 0) {
             listEl.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-gray-500">사용자가 없습니다.</td></tr>`;
@@ -795,22 +809,22 @@ document.addEventListener('DOMContentLoaded', () => {
             users.forEach(user => {
                 const meta = user.user_metadata || {};
                 const profile = profilesMap.get(user.id);
-    
+
                 const username = meta.username || profile?.username || '';
-    
+
                 const isApproved = meta.is_approved === true;
                 const isSuperUserAccount = user.email === 'eowert72@gmail.com';
-    
+
                 let roleDisplay = meta.role || '미지정';
                 let statusDisplay = isApproved ? '<span class="text-green-600 font-semibold">승인됨</span>' : '<span class="text-yellow-600 font-semibold">승인 대기</span>';
                 let actionButton = !isApproved ? `<button data-id="${user.id}" class="approve-btn btn btn-primary text-xs">승인</button>` : '';
-    
+
                 if (isSuperUserAccount) {
                     roleDisplay = '<span class="font-bold text-violet-600">SUPERUSER</span>';
                     statusDisplay = '<span class="text-green-600 font-semibold">자동 승인</span>';
                     actionButton = '';
                 }
-    
+
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors";
                 tr.innerHTML = `
@@ -883,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = target.dataset.id;
             const tableName = target.dataset.table;
             const title = target.dataset.title;
-            
+
             showConfirmationModal('이 항목을 정말로 삭제하시겠습니까?', async () => {
                 showLoader(true);
                 const { error } = await supabase.from(tableName).delete().eq('id', id);
@@ -915,10 +929,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isConfirmed = !!request?.confirmed_at;
         const canEditRequest = !isConfirmed || isSuperUser || currentRole === 'admin';
-        
+
         const requesterFieldsDisabled = !canEditRequest || (currentRole === 'processor' && !isSuperUser && currentRole !== 'admin') ? 'disabled' : '';
         const processorFieldsDisabled = (currentRole === 'requester' && !isSuperUser && currentRole !== 'admin') ? 'disabled' : '';
-        
+
         const vehicleTypeOptions = vehicleTypes.map(vt => `<option value="${vt.name}" ${request?.vehicle_type === vt.name ? 'selected' : ''}>${vt.name}</option>`).join('');
         const actualVehicleTypeOptions = vehicleTypes.map(vt => `<option value="${vt.name}" ${request?.actual_vehicle_type === vt.name ? 'selected' : ''}>${vt.name}</option>`).join('');
 
@@ -934,9 +948,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <form id="dispatch-form" class="p-8">
                     <input type="hidden" name="id" value="${request?.id || ''}">
-                     <div class="mb-4">
-                        <button type="button" id="load-favorite-btn" class="btn btn-primary w-full" ${requesterFieldsDisabled}>납품처 즐겨찾기 불러오기</button>
-                    </div>
+                       <div class="mb-4">
+                            <button type="button" id="load-favorite-btn" class="btn btn-primary w-full" ${requesterFieldsDisabled}>납품처 즐겨찾기 불러오기</button>
+                        </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2">
                         <div class="border-b lg:border-b-0 lg:border-r lg:pr-8 py-4">
                             <h4 class="text-lg font-semibold mb-4 text-[var(--primary-color)] flex items-center gap-2">배차 요청 정보</h4>
@@ -1046,15 +1060,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 </form>
             </div>
         </div>`;
-        
+
         setTimeout(() => {
             document.querySelector('.modal-container')?.classList.remove('scale-95');
         }, 10);
-        
+
         document.getElementById('close-modal-btn').onclick = closeDispatchModal;
         document.getElementById('cancel-dispatch-btn').onclick = closeDispatchModal;
         document.getElementById('dispatch-form').onsubmit = handleDispatchFormSubmit;
-        
+
         document.getElementById('load-favorite-btn').onclick = openFavoritesLoader;
         document.getElementById('destination-search-btn').onclick = () => openPointSearchModal('destination', destinations);
         document.getElementById('loading-search-btn').onclick = () => openPointSearchModal('loading', loadingPoints);
@@ -1226,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(e.target);
         const requestData = Object.fromEntries(formData.entries());
         const now = new Date().toISOString();
-        
+
         const requestId = requestData.id;
         delete requestData.id;
 
@@ -1236,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (requestData.cost) {
             requestData.cost = requestData.cost.replace(/,/g, '');
         }
-        
+
         const numericFields = ['pallet_qty', 'box_qty', 'cost'];
         numericFields.forEach(field => {
             requestData[field] = requestData[field] ? parseInt(requestData[field], 10) : null;
@@ -1249,7 +1263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let result;
         if (requestId) { // 업데이트
             const { data: currentRequest } = await supabase.from('dispatch_requests').select('status, confirmed_at').eq('id', requestId).single();
-            
+
             if (currentRequest.status === 'requested') {
                 requestData.request_updated_at = now;
                 if (!currentRequest.confirmed_at && requestData.vehicle_number) {
@@ -1268,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
             requestData.requested_at = now;
             result = await supabase.from('dispatch_requests').insert([requestData]);
         }
-        
+
         if (saveAsFavorite && !result.error) {
             const favoriteData = {
                 destination: requestData.destination,
@@ -1318,25 +1332,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
                         <thead>
-                             <tr>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">${nameHeader}</th>
-                                ${hasAddress ? `
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">주소</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">담당자 이름</th>
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">담당자 연락처</th>
-                                ` : ''}
-                                <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
-                            </tr>
+                                <tr>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">${nameHeader}</th>
+                                    ${hasAddress ? `
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">주소</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">담당자 이름</th>
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">담당자 연락처</th>
+                                    ` : ''}
+                                    <th class="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-b-2">관리</th>
+                                </tr>
                         </thead>
                         <tbody id="master-list" class="divide-y divide-gray-200"></tbody>
                     </table>
                 </div>
             </div>`;
-        
+
         document.getElementById('add-master-btn').onclick = () => openMasterDataModal(tableName, title);
         document.getElementById('excel-upload-btn').onchange = (e) => handleExcelUpload(e, tableName, title);
         document.getElementById('download-template-btn').onclick = () => downloadMasterTemplate(tableName, title);
-        
+
         await fetchAndRenderMasterData(tableName, title);
     }
 
@@ -1346,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasAddress = ['loading_points', 'unloading_points'].includes(tableName);
         const colspan = hasAddress ? 5 : 2;
         listEl.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>`;
-        
+
         const { data, error } = await supabase.from(tableName).select('*').order('name', { ascending: true });
 
         listEl.innerHTML = '';
@@ -1431,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formData = new FormData(e.target);
         const dataToInsert = Object.fromEntries(formData.entries());
-        
+
         for (const key in dataToInsert) {
             if (dataToInsert[key] === '') dataToInsert[key] = null;
         }
@@ -1447,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchAndRenderMasterData(tableName, title);
         }
     }
-    
+
     function downloadMasterTemplate(tableName, title) {
         const hasAddress = ['loading_points', 'unloading_points'].includes(tableName);
         const nameHeader = {
@@ -1479,7 +1493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
+
                 const hasAddress = ['loading_points', 'unloading_points'].includes(tableName);
                 const nameHeader = {
                     'destinations': '납품처',
@@ -1487,14 +1501,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     'unloading_points': '이름',
                     'vehicle_types': '차종'
                 }[tableName];
-                
+
                 const requiredHeaders = hasAddress ? [nameHeader, '주소', '담당자 이름', '담당자 연락처'] : [nameHeader];
                 const headers = json[0];
 
                 if (![nameHeader, ...(hasAddress ? ['주소'] : [])].every(h => headers.includes(h))) {
-                     throw new Error(`엑셀 파일의 첫 행에 필수 헤더(${nameHeader}${hasAddress ? ', 주소' : ''})가 필요합니다.`);
+                    throw new Error(`엑셀 파일의 첫 행에 필수 헤더(${nameHeader}${hasAddress ? ', 주소' : ''})가 필요합니다.`);
                 }
-                
+
                 const nameIndex = headers.indexOf(nameHeader);
                 const addressIndex = hasAddress ? headers.indexOf('주소') : -1;
                 const managerNameIndex = hasAddress ? headers.indexOf('담당자 이름') : -1;
