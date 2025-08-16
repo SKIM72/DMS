@@ -39,9 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentRole = currentUser.user_metadata.role || 'requester';
         isSuperUser = currentUser.email === 'eowert72@gmail.com'; 
 
+        // ★★★ 수정된 부분 1 ★★★
+        // 승인되지 않은 사용자의 경우, 모달의 '확인' 버튼을 눌러야 로그아웃 되도록 수정
         if (!currentUser.user_metadata.is_approved && !isSuperUser) {
-            showMessageModal('계정이 아직 승인되지 않았습니다. 관리자에게 문의하세요.', 'error');
-            await handleLogout();
+            showMessageModal(
+                '계정이 아직 승인되지 않았습니다. 관리자에게 문의하세요.', 
+                'error', 
+                handleLogout // handleLogout 함수를 콜백으로 전달
+            );
+            showLoader(false); // 로더를 숨겨서 모달이 잘 보이게 합니다.
             return;
         }
 
@@ -129,7 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingOverlay.style.display = show ? 'flex' : 'none';
     }
 
-    function showMessageModal(message, type = 'info') {
+    // ★★★ 수정된 부분 2 ★★★
+    // '확인' 버튼 클릭 후 실행할 onOk 콜백 함수를 받을 수 있도록 수정
+    function showMessageModal(message, type = 'info', onOk = null) {
         const modalHtml = `
         <div id="message-modal" class="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[1000]">
             <div class="modal-container bg-white w-full max-w-md rounded-xl shadow-2xl text-center p-6">
@@ -144,7 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('message-modal')?.remove();
         };
 
-        document.getElementById('message-ok-btn').onclick = closeModal;
+        document.getElementById('message-ok-btn').onclick = () => {
+            closeModal();
+            if (onOk) {
+                onOk();
+            }
+        };
     }
 
     function showConfirmationModal(message, onConfirm) {

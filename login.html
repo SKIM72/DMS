@@ -6,11 +6,9 @@
     <title>로그인 - 통합 배차 관리 시스템</title>
     <link rel="icon" type="image/png" href="icon.png">
     
-    <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
@@ -82,13 +80,11 @@
 </head>
 <body class="text-white">
 
-    <!-- 로딩 오버레이 -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex-col items-center justify-center hidden">
         <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white"></div>
         <p class="text-white mt-4">처리 중입니다...</p>
     </div>
 
-    <!-- Login Section -->
     <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md p-8 space-y-8 glass-card">
             <div class="text-center">
@@ -119,7 +115,6 @@
         </div>
     </div>
     
-    <!-- Registration Section -->
     <div id="register-section" class="min-h-screen flex items-center justify-center p-4 hidden">
          <div class="w-full max-w-md p-8 space-y-8 glass-card">
             <div class="text-center">
@@ -169,7 +164,6 @@
         </div>
     </div>
 
-    <!-- Password Reset Request Section -->
     <div id="reset-section" class="min-h-screen flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-md p-8 space-y-8 glass-card">
             <div class="text-center">
@@ -193,7 +187,6 @@
         </div>
     </div>
 
-    <!-- Password Update Section -->
     <div id="update-password-section" class="min-h-screen flex items-center justify-center p-4 hidden">
         <div class="w-full max-w-md p-8 space-y-8 glass-card">
              <div class="text-center">
@@ -242,7 +235,6 @@
             document.getElementById('show-reset').addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('reset'); });
             document.getElementById('show-login-from-reset').addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('login'); });
 
-            // Check for password recovery event on page load
             supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 if (event === 'PASSWORD_RECOVERY') {
                     toggleAuthForms('update-password');
@@ -335,22 +327,12 @@
                     showLoader(false);
                     return;
                 }
-
+                
+                // ★★★ 수정된 부분 ★★★
+                // 프로필 생성은 데이터베이스 트리거가 담당하므로 클라이언트에서는 성공 메시지만 표시합니다.
                 if (signUpData.user) {
-                    const { error: profileError } = await supabaseClient
-                        .from('profiles')
-                        .insert({
-                            id: signUpData.user.id,
-                            username: username,
-                            email: email
-                        });
-                    
-                    if (profileError) {
-                        registerMessage.textContent = '프로필 생성 실패: ' + profileError.message;
-                    } else {
-                        registerMessage.textContent = '가입 요청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.';
-                        e.target.reset();
-                    }
+                    registerMessage.textContent = '가입 요청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.';
+                    e.target.reset();
                 }
                 showLoader(false);
             }
