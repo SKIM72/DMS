@@ -365,6 +365,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </table>
                 </div>
             </div>`;
+        
+        // --- START: 요청사항 반영 ---
+        // 기본값으로 오늘 날짜를 설정합니다.
+        const today = getTodayString();
+        document.getElementById('start-date').value = today;
+        document.getElementById('end-date').value = today;
+        // --- END: 요청사항 반영 ---
 
         document.getElementById('search-btn').onclick = fetchAndRenderDispatches;
         document.getElementById('excel-btn').onclick = downloadExcel;
