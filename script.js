@@ -39,15 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
         currentRole = currentUser.user_metadata.role || 'requester';
         isSuperUser = currentUser.email === 'eowert72@gmail.com';
 
-        // ★★★ 수정된 부분 1 ★★★
-        // 승인되지 않은 사용자의 경우, 모달의 '확인' 버튼을 눌러야 로그아웃 되도록 수정
         if (!currentUser.user_metadata.is_approved && !isSuperUser) {
             showMessageModal(
                 '계정이 아직 승인되지 않았습니다. 관리자에게 문의하세요.',
                 'error',
-                handleLogout // handleLogout 함수를 콜백으로 전달
+                handleLogout
             );
-            showLoader(false); // 로더를 숨겨서 모달이 잘 보이게 합니다.
+            showLoader(false);
             return;
         }
 
@@ -82,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allMenus = {
             'dispatch-status': { title: '배차 현황', render: renderDispatchStatus },
-            'favorite-destinations': { title: '납품처 즐겨찾기 관리', render: renderFavoriteDestinations },
+            'favorite-destinations': { title: '즐겨찾기 관리', render: renderFavoriteDestinations },
             'destination-master': { title: '납품처 관리', render: () => renderMasterManagement('destinations', '납품처') },
             'loading-point-master': { title: '상차지 관리', render: () => renderMasterManagement('loading_points', '상차지') },
             'unloading-point-master': { title: '하차지 관리', render: () => renderMasterManagement('unloading_points', '하차지') },
@@ -96,22 +94,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const menu = allMenus[id];
             const isAdminOrSuperUser = isSuperUser || currentRole === 'admin';
 
-            // --- 메뉴 권한 설정 ---
             let showMenu = false;
             if (id === 'dispatch-status') {
                 showMenu = true;
             } else if (id === 'favorite-destinations') {
                 showMenu = isAdminOrSuperUser || currentRole === 'requester';
-            } else if (id.includes('-master')) { // 마스터 관리 메뉴
+            } else if (id.includes('-master')) {
                 showMenu = isSuperUser || currentRole === 'requester';
-            } else if (id === 'account-management') { // 계정 관리 메뉴
+            } else if (id === 'account-management') {
                 showMenu = isAdminOrSuperUser;
             }
 
             if (!showMenu) {
                 return;
             }
-            // --- 메뉴 권한 설정 끝 ---
 
             const button = document.createElement('button');
             button.id = `nav-${id}`;
@@ -135,8 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingOverlay.style.display = show ? 'flex' : 'none';
     }
 
-    // ★★★ 수정된 부분 2 ★★★
-    // '확인' 버튼 클릭 후 실행할 onOk 콜백 함수를 받을 수 있도록 수정
     function showMessageModal(message, type = 'info', onOk = null) {
         const modalHtml = `
         <div id="message-modal" class="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[1000]">
@@ -254,14 +248,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         autoRefreshInterval = setInterval(() => {
             if (document.getElementById('nav-dispatch-status')?.classList.contains('active')) {
-                fetchAndRenderDispatches();
+                fetchAndRenderDispatches(true);
             }
-        }, 180000); // 3분 = 180,000 밀리초
+        }, 180000);
 
         dispatchChannel = supabase.channel('dispatch_requests_changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_requests' }, payload => {
                 if (document.getElementById('nav-dispatch-status')?.classList.contains('active')) {
-                    fetchAndRenderDispatches();
+                    fetchAndRenderDispatches(true);
                 }
                 handleNotification(payload);
             })
@@ -304,8 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 배차 현황 메뉴 ---
     async function renderDispatchStatus() {
-        // ★★★ 수정된 부분 ★★★
-        // 'processor' 역할이 아닐 경우에만 "신규 배차 요청" 버튼을 표시
         let addDispatchButtonHtml = '';
         if (currentRole !== 'processor') {
             addDispatchButtonHtml = `<button id="add-dispatch-btn" class="btn btn-primary text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>신규 배차 요청</button>`;
@@ -361,9 +353,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차지</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차지 담당자</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">하차시간</th>
+                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">수량</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">요청차종</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">실제차종</th>
-                                <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">수량</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">차량번호</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">기사님 정보</th>
                                 <th class="p-2 text-center text-xs font-semibold text-white tracking-wider">관리</th>
@@ -390,8 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchAndRenderDispatches();
         };
 
-        // ★★★ 수정된 부분 ★★★
-        // 버튼이 존재할 경우에만 이벤트 리스너를 할당
         const addDispatchBtn = document.getElementById('add-dispatch-btn');
         if (addDispatchBtn) {
             addDispatchBtn.onclick = () => openDispatchModal();
@@ -406,10 +396,12 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetchAndRenderDispatches();
     }
 
-    async function fetchAndRenderDispatches() {
-        showLoader(true);
-        const listEl = document.getElementById('dispatch-list');
-        listEl.innerHTML = '<tr><td colspan="16" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
+    async function fetchAndRenderDispatches(isSilent = false) {
+        if (!isSilent) {
+            showLoader(true);
+            const listEl = document.getElementById('dispatch-list');
+            listEl.innerHTML = '<tr><td colspan="16" class="text-center p-6 text-gray-500">데이터를 불러오는 중...</td></tr>';
+        }
 
         const startDate = document.getElementById('start-date')?.value;
         const endDate = document.getElementById('end-date')?.value;
@@ -442,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { data, error } = await query.order('created_at', { ascending: false });
 
+        const listEl = document.getElementById('dispatch-list');
         listEl.innerHTML = '';
         if (error) {
             listEl.innerHTML = `<tr><td colspan="16" class="text-center p-6 text-red-500">오류: ${error.message}</td></tr>`;
@@ -450,7 +443,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             data.forEach((req, index) => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition-colors fade-in-row";
+                
+                let statusClass = 'hover:bg-gray-50';
+                if (req.status === 'requested') {
+                    statusClass = 'bg-yellow-50 hover:bg-yellow-100';
+                }
+                tr.className = `transition-colors fade-in-row ${statusClass}`;
                 tr.style.animationDelay = `${index * 50}ms`;
 
                 const vehicleRequest = [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(' ');
@@ -466,20 +464,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 tr.innerHTML = `
                     <td class="p-2 text-xs text-center whitespace-nowrap">${getStatusBadge(req)}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.requester_name || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap font-medium text-gray-800">${req.release_date || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.destination || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.loading_location || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${loadingManagerInfo || '-'}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.loading_time || '-'}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.unloading_location || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${unloadingManagerInfo || '-'}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.unloading_time || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${vehicleRequest || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${actualVehicleInfo || '-'}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${quantityText || ''}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${req.vehicle_number || '-'}</td>
-                    <td class="p-2 text-xs text-center whitespace-nowrap text-gray-600">${driverInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap">${req.requester_name || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap font-medium">${req.release_date || ''}</td>
+                    <td class="p-2 text-xs text-center">${req.destination || ''}</td>
+                    <td class="p-2 text-xs text-center">${req.loading_location || ''}</td>
+                    <td class="p-2 text-xs text-center">${loadingManagerInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap">${req.loading_time || '-'}</td>
+                    <td class="p-2 text-xs text-center">${req.unloading_location || ''}</td>
+                    <td class="p-2 text-xs text-center">${unloadingManagerInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap">${req.unloading_time || ''}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap">${quantityText || ''}</td>
+                    <td class="p-2 text-xs text-center">${vehicleRequest || ''}</td>
+                    <td class="p-2 text-xs text-center">${actualVehicleInfo || '-'}</td>
+                    <td class="p-2 text-xs text-center whitespace-nowrap">${req.vehicle_number || '-'}</td>
+                    <td class="p-2 text-xs text-center">${driverInfo || '-'}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap">
                         <button data-id="${req.id}" class="edit-dispatch-btn btn btn-sm btn-secondary">수정/확인</button>
                         ${canDelete ? `<button data-id="${req.id}" class="delete-dispatch-btn btn btn-sm btn-accent mt-1">삭제</button>` : ''}
@@ -487,7 +485,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 listEl.appendChild(tr);
             });
         }
-        showLoader(false);
+        
+        if (!isSilent) {
+            showLoader(false);
+        }
     }
 
     async function downloadExcel() {
@@ -532,10 +533,10 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessageModal("다운로드할 데이터가 없습니다.");
             return;
         }
-
+        
         const excelHeaders = [
             '상태', '요청자', '출고일', '납품처', '상차지', '상차지 담당자 정보', '하차지', '하차지 담당자 정보',
-            '상차지 도착 요청시간', '하차시간', '요청차종', '파렛트 수량', '박스 수량',
+            '상차지 도착 요청시간', '하차시간', '파렛트 수량', '박스 수량', '요청차종', 
             '차량번호', '실제 차종', '기사님 정보', '금액', '요청(수정)시간', '확정(수정)시간'
         ];
 
@@ -547,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const loadingManagerInfo = [req.loading_manager_name, req.loading_manager_phone].filter(Boolean).join(' / ');
             const unloadingManagerInfo = [req.unloading_manager_name, req.unloading_manager_phone].filter(Boolean).join(' / ');
-
+            
             return [
                 statusText,
                 req.requester_name || '',
@@ -559,9 +560,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 unloadingManagerInfo,
                 req.loading_time || '',
                 req.unloading_time || '',
-                [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(' ') || '',
                 req.pallet_qty ?? '',
                 req.box_qty ?? '',
+                [req.vehicle_type, req.vehicle_type_info].filter(Boolean).join(' ') || '',
                 req.vehicle_number || '',
                 req.actual_vehicle_type || '',
                 [req.driver_name, req.driver_phone].filter(Boolean).join(' / ') || '',
@@ -630,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="content-card mt-4 flex flex-col" style="max-height: 80vh;">
                 <div class="flex-shrink-0">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">납품처 즐겨찾기 관리</h2>
+                        <h2 class="text-2xl font-bold">즐겨찾기 관리</h2>
                         <button id="add-favorite-btn" class="btn btn-primary text-sm">신규 즐겨찾기 추가</button>
                     </div>
                 </div>
@@ -949,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <form id="dispatch-form" class="p-8">
                     <input type="hidden" name="id" value="${request?.id || ''}">
                        <div class="mb-4">
-                            <button type="button" id="load-favorite-btn" class="btn btn-primary w-full" ${requesterFieldsDisabled}>납품처 즐겨찾기 불러오기</button>
+                            <button type="button" id="load-favorite-btn" class="btn btn-primary w-full" ${requesterFieldsDisabled}>즐겨찾기 불러오기</button>
                         </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2">
                         <div class="border-b lg:border-b-0 lg:border-r lg:pr-8 py-4">
@@ -1261,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let result;
-        if (requestId) { // 업데이트
+        if (requestId) {
             const { data: currentRequest } = await supabase.from('dispatch_requests').select('status, confirmed_at').eq('id', requestId).single();
 
             if (currentRequest.status === 'requested') {
@@ -1274,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 requestData.confirmation_updated_at = now;
             }
             result = await supabase.from('dispatch_requests').update(requestData).eq('id', requestId);
-        } else { // 신규 생성
+        } else {
             requestData.requester_id = currentUser.id;
             requestData.requester_email = currentUser.email;
             requestData.requester_name = currentUser.user_metadata.name || currentUser.user_metadata.username || currentUser.email;
@@ -1291,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             if (favoriteData.destination && favoriteData.loading_location && favoriteData.unloading_location) {
                 const { error: favError } = await supabase.from('favorite_destinations').insert([favoriteData]);
-                if (favError && favError.code !== '23505') { // 23505 = unique_violation
+                if (favError && favError.code !== '23505') {
                     console.warn("즐겨찾기 저장 실패:", favError.message);
                 }
             }
