@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-2 text-xs text-center whitespace-nowrap">${req.vehicle_number || '-'}</td>
                     <td class="p-2 text-xs text-center">${driverInfo || '-'}</td>
                     <td class="p-2 text-xs text-center whitespace-nowrap">
-                        <button data-id="${req.id}" class="edit-dispatch-btn btn btn-sm btn-secondary">수정/확인</button>
+                        <button data-id="${req.id}" class="edit-dispatch-btn btn btn-sm btn-secondary">배차진행/상세</button>
                         ${canDelete ? `<button data-id="${req.id}" class="delete-dispatch-btn btn btn-sm btn-accent mt-1">삭제</button>` : ''}
                     </td>`;
                 listEl.appendChild(tr);
@@ -944,7 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div id="dispatch-modal-inner" class="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-30">
             <div class="modal-container bg-white w-full max-w-5xl rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
                 <div class="sticky top-0 bg-gray-50 p-6 border-b z-10 flex justify-between items-center">
-                    <h3 class="text-2xl font-bold">${request ? '배차 정보 수정/확인' : '신규 배차 요청'}</h3>
+                    <h3 class="text-2xl font-bold">${request ? '배차 진행 / 정보 수정 / 상세 정보' : '신규 배차 요청'}</h3>
                     <button id="close-modal-btn" class="text-gray-400 hover:text-gray-700 text-3xl transition">&times;</button>
                 </div>
                 <form id="dispatch-form" class="p-8">
@@ -961,7 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <label class="label">납품처</label>
                                     <div class="flex items-center gap-2">
-                                        <input type="text" name="destination" id="destination_input" class="input-field" placeholder="납품처를 입력하거나 돋보기를 눌러 검색" value="${request?.destination || ''}" ${requesterFieldsDisabled}>
+                                        <input type="text" name="destination" id="destination_input" class="input-field" placeholder="납품처 이름" value="${request?.destination || ''}" ${requesterFieldsDisabled}>
                                         <button type="button" id="destination-search-btn" class="btn btn-secondary p-2" ${requesterFieldsDisabled}>
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
                                         </button>
@@ -1020,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div><label class="label">요청 차종 추가 정보</label><input type="text" name="vehicle_type_info" class="input-field" placeholder="예: 윙바디, 리프트" value="${request?.vehicle_type_info || ''}" ${requesterFieldsDisabled}></div>
                                 <div><label class="label">파렛트 수량</label><input type="number" name="pallet_qty" class="input-field" placeholder="숫자만 입력" value="${request?.pallet_qty ?? ''}" ${requesterFieldsDisabled}></div>
                                 <div><label class="label">박스 수량</label><input type="number" name="box_qty" class="input-field" placeholder="숫자만 입력" value="${request?.box_qty ?? ''}" ${requesterFieldsDisabled}></div>
-                                <div class="md:col-span-2"><label class="label">요청 특이사항</label><textarea name="request_notes" class="input-field" rows="2" placeholder="예: 상차지 특이사항, 수량 변동 가능성 등" ${requesterFieldsDisabled}>${request?.request_notes || ''}</textarea></div>
+                                <div class="md:col-span-2"><label class="label">요청 특이사항</label><textarea name="request_notes" class="input-field" rows="2" placeholder="예) 상차 도크 번호, 수량 변동 가능성 등 별도 코멘트" ${requesterFieldsDisabled}>${request?.request_notes || ''}</textarea></div>
                                 <div class="md:col-span-2 flex items-center mt-2">
                                     <input type="checkbox" id="save-as-favorite" name="save_as_favorite" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${requesterFieldsDisabled}>
                                     <label for="save-as-favorite" class="ml-2 block text-sm text-gray-700">입력한 납품처/상차지/하차지를 즐겨찾기에 추가</label>
@@ -1042,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div><label class="label">기사님 이름</label><input type="text" name="driver_name" class="input-field" placeholder="예: 홍길동" value="${request?.driver_name || ''}" ${processorFieldsDisabled}></div>
                                 <div><label class="label">기사님 연락처</label><input type="text" name="driver_phone" class="input-field" placeholder="예: 010-1234-5678" value="${request?.driver_phone || ''}" ${processorFieldsDisabled}></div>
                                 <div><label class="label">금액</label><input type="text" name="cost" id="cost_input" class="input-field" placeholder="숫자만 입력" value="${request?.cost ? request.cost.toLocaleString('ko-KR') : ''}" ${processorFieldsDisabled}></div>
-                                <div class="md:col-span-2"><label class="label">진행 특이사항</label><textarea name="processing_notes" class="input-field" rows="2" placeholder="예: 혼적, 운송료 특이사항 등" ${processorFieldsDisabled}>${request?.processing_notes || ''}</textarea></div>
+                                <div class="md:col-span-2"><label class="label">진행 특이사항</label><textarea name="processing_notes" class="input-field" rows="2" placeholder="예) 운송료 특이사항, 입차 예상시간 등 별도 코멘트" ${processorFieldsDisabled}>${request?.processing_notes || ''}</textarea></div>
                             </div>
                         </div>
                     </div>
